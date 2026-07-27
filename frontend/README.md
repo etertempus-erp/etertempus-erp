@@ -15,8 +15,9 @@ npm run dev
 - Recursos.
 - Formulas.
 - Produccion.
+- Login.
+- Compras, ventas, gastos, stock y movimientos.
 
 ## Proximo paso tecnico
 
-Conectar formularios con la API FastAPI y reemplazar datos de ejemplo por respuestas reales.
-
+Configurar `NEXT_PUBLIC_API_BASE_URL` segun el entorno antes de compilar para beta.
