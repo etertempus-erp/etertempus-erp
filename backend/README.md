@@ -62,6 +62,8 @@ No usar `downgrade` sobre una base con datos reales sin respaldo y revision prev
 ## Alcance actual
 
 - Rutas base para recursos, formulas, produccion, compras, ventas, busqueda y dashboard.
+- Autenticacion con cookie HTTP-only.
+- Roles basicos: administrador, operador y consulta.
 - Entidades de dominio.
 - Servicios puros para calculo de formulas y plan de produccion.
 - Repositorios SQLAlchemy para PostgreSQL.
@@ -71,3 +73,14 @@ No usar `downgrade` sobre una base con datos reales sin respaldo y revision prev
 ## Proximo paso tecnico
 
 Mantener todos los cambios nuevos de estructura mediante Alembic.
+
+## Crear el primer administrador
+
+No guardar la contrasena en el repositorio. Usar variables de entorno:
+
+```powershell
+$env:INITIAL_ADMIN_EMAIL="admin@example.com"
+$env:INITIAL_ADMIN_PASSWORD="una-clave-larga-y-segura"
+$env:INITIAL_ADMIN_NAME="Administrador"
+python scripts\create_initial_admin.py
+```

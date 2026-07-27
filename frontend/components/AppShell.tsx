@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Beaker, Boxes, ClipboardList, Home, Menu, PackageCheck, ReceiptText, Search, ShoppingCart, WalletCards } from "lucide-react";
+import { Beaker, Boxes, ClipboardList, Home, LogOut, Menu, PackageCheck, ReceiptText, Search, ShoppingCart, WalletCards } from "lucide-react";
 
 import { apiGet, ORGANIZATION_ID, SearchResult } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { friendlyErrorMessage } from "@/lib/messages";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const { canWrite, isAdmin, logout, user } = useAuth();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">Eter ERP</div>
+        <div className="session-card">
+          <strong>{user?.name}</strong>
+          <span>{user?.role === "admin" ? "Administrador" : user?.role === "operator" ? "Operador" : "Consulta"}</span>
+          <button type="button" onClick={logout}>
+            <LogOut size={15} /> Salir
+          </button>
+        </div>
         <div className="global-search">
           <label className="global-search-box">
             <Search size={17} />
@@ -84,18 +93,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/formulas">
             <Beaker size={18} /> Formulas
           </Link>
-          <Link href="/produccion">
-            <ClipboardList size={18} /> Produccion
-          </Link>
-          <Link href="/compras">
-            <ReceiptText size={18} /> Compras
-          </Link>
-          <Link href="/ventas">
-            <ShoppingCart size={18} /> Ventas
-          </Link>
-          <Link href="/gastos">
-            <WalletCards size={18} /> Gastos
-          </Link>
+          {canWrite ? (
+            <>
+              <Link href="/produccion">
+                <ClipboardList size={18} /> Produccion
+              </Link>
+              <Link href="/compras">
+                <ReceiptText size={18} /> Compras
+              </Link>
+              <Link href="/ventas">
+                <ShoppingCart size={18} /> Ventas
+              </Link>
+              <Link href="/gastos">
+                <WalletCards size={18} /> Gastos
+              </Link>
+            </>
+          ) : null}
         </nav>
         <nav className="mobile-nav" aria-label="Principal movil">
           <Link href="/" onClick={() => setMobileMoreOpen(false)}>
@@ -104,25 +117,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/stock" onClick={() => setMobileMoreOpen(false)}>
             <PackageCheck size={18} /> Stock
           </Link>
-          <Link href="/compras/rapida" onClick={() => setMobileMoreOpen(false)}>
-            <ReceiptText size={18} /> Comprar
-          </Link>
-          <Link href="/ventas/rapida" onClick={() => setMobileMoreOpen(false)}>
-            <ShoppingCart size={18} /> Vender
-          </Link>
+          {canWrite ? (
+            <>
+              <Link href="/compras/rapida" onClick={() => setMobileMoreOpen(false)}>
+                <ReceiptText size={18} /> Comprar
+              </Link>
+              <Link href="/ventas/rapida" onClick={() => setMobileMoreOpen(false)}>
+                <ShoppingCart size={18} /> Vender
+              </Link>
+            </>
+          ) : null}
           <button type="button" onClick={() => setMobileMoreOpen((current) => !current)}>
             <Menu size={18} /> Mas
           </button>
         </nav>
         {mobileMoreOpen ? (
           <div className="mobile-more-menu">
-            <Link href="/gastos" onClick={() => setMobileMoreOpen(false)}>Gastos</Link>
-            <Link href="/produccion/rapida" onClick={() => setMobileMoreOpen(false)}>Produccion</Link>
-            <Link href="/recursos" onClick={() => setMobileMoreOpen(false)}>Recursos</Link>
+            {canWrite ? <Link href="/gastos" onClick={() => setMobileMoreOpen(false)}>Gastos</Link> : null}
+            {canWrite ? <Link href="/produccion/rapida" onClick={() => setMobileMoreOpen(false)}>Produccion</Link> : null}
+            {isAdmin ? <Link href="/recursos" onClick={() => setMobileMoreOpen(false)}>Recursos</Link> : null}
             <Link href="/formulas" onClick={() => setMobileMoreOpen(false)}>Formulas</Link>
             <Link href="/movimientos" onClick={() => setMobileMoreOpen(false)}>Movimientos</Link>
-            <span>Proveedores</span>
-            <span>Configuracion</span>
+            {isAdmin ? <span>Proveedores</span> : null}
+            {isAdmin ? <span>Configuracion</span> : null}
+            <button type="button" onClick={logout}>Cerrar sesion</button>
           </div>
         ) : null}
       </aside>

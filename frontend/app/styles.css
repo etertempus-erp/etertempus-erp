@@ -53,6 +53,71 @@ textarea {
   margin-bottom: 16px;
 }
 
+.session-card {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 10px;
+}
+
+.session-card span {
+  color: rgba(248, 246, 239, 0.72);
+  font-size: 13px;
+}
+
+.session-card button,
+.mobile-more-menu button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: #f8f6ef;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px 0 0;
+  text-align: left;
+}
+
+.auth-loading,
+.login-page {
+  align-items: center;
+  display: flex;
+  min-height: 100vh;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 22px;
+  max-width: 430px;
+  padding: 26px;
+  width: 100%;
+}
+
+.login-panel h1 {
+  font-size: 34px;
+  margin: 0 0 8px;
+}
+
+.login-panel p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.login-eyebrow {
+  color: var(--accent-2) !important;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px !important;
+  text-transform: uppercase;
+}
+
 .global-search {
   margin-bottom: 24px;
   position: relative;

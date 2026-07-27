@@ -9,6 +9,7 @@ from sqlalchemy import and_, func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from app.api.auth import audit_user_id, require_roles
 from app.db.models import (
     ImportedSaleModel,
     InventoryMovementModel,
@@ -21,10 +22,12 @@ from app.db.models import (
     SaleModel,
     SalesChannelModel,
     SaleStatus,
+    UserRole,
 )
 from app.db.session import get_db
 from app.domain.production.entities import MovementType
 from app.domain.resources.entities import ResourceType
+from app.schemas.auth import AuthenticatedUser
 from app.schemas.sales import (
     ProductForSale,
     SaleCancel,
@@ -266,7 +269,11 @@ def available_products(
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=SaleCreated)
-def create_sale(payload: SaleCreate, db: Session = Depends(get_db)):
+def create_sale(
+    payload: SaleCreate,
+    db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
+):
     try:
         channel = db.get(SalesChannelModel, payload.channel_id)
         if channel is None or channel.organization_id != payload.organization_id:
@@ -339,6 +346,7 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db)):
             notes=payload.notes,
             source="system",
             created_by=payload.created_by,
+            created_by_user_id=audit_user_id(user),
             confirmed_at=datetime.now(timezone.utc),
         )
         db.add(sale)
@@ -368,6 +376,7 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db)):
                 unit=product.unit,
                 reason=f"Venta {code}",
                 occurred_at=datetime.combine(payload.sale_date, datetime.min.time(), tzinfo=timezone.utc),
+                created_by_user_id=audit_user_id(user),
             )
             db.add(movement)
             db.flush()
@@ -497,6 +506,7 @@ def cancel_sale(
     sale_id: UUID,
     payload: SaleCancel,
     db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(require_roles(UserRole.ADMIN)),
 ):
     sale = db.scalar(
         select(SaleModel)
@@ -527,6 +537,7 @@ def cancel_sale(
                 quantity=detail.quantity,
                 unit=product.unit,
                 reason=f"Anulacion de venta {sale.code}: {payload.reason}",
+                created_by_user_id=audit_user_id(user),
             )
             db.add(movement)
             db.flush()
@@ -539,6 +550,7 @@ def cancel_sale(
 
         sale.status = SaleStatus.CANCELLED
         sale.cancelled_at = datetime.now(timezone.utc)
+        sale.cancelled_by_user_id = audit_user_id(user)
         sale.cancellation_reason = payload.reason
         sale.updated_at = datetime.now(timezone.utc)
         db.commit()

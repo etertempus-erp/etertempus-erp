@@ -1,5 +1,13 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
-export const ORGANIZATION_ID = "00000000-0000-0000-0000-000000000001";
+export const ORGANIZATION_ID = process.env.NEXT_PUBLIC_ORGANIZATION_ID ?? "00000000-0000-0000-0000-000000000001";
+
+export type AuthenticatedUser = {
+  id: string;
+  organization_id: string;
+  email: string;
+  name: string;
+  role: "admin" | "operator" | "viewer";
+};
 
 export type ResourceType = "raw_material" | "packaging" | "product" | "mix";
 export type UnitType = "g" | "kg" | "ml" | "unit";
@@ -257,6 +265,7 @@ export type InventoryMovementRead = {
 export async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: "no-store",
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -279,6 +288,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -305,6 +315,7 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 export async function apiPut<T>(path: string, body: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },

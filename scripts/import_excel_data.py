@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import unicodedata
@@ -13,12 +14,16 @@ from psycopg.rows import dict_row
 
 
 ORGANIZATION_ID = UUID("00000000-0000-0000-0000-000000000001")
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/eter_erp"
+DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/eter_erp"
 MIGRATION_FILE = Path("database/migrations/001_resource_costs_product_prices.sql")
 MIGRATION_FILES = [
     Path("database/migrations/001_resource_costs_product_prices.sql"),
     Path("database/migrations/002_imported_sales_expenses_and_non_negative.sql"),
 ]
+
+
+def database_url() -> str:
+    return os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL).replace("postgresql+psycopg://", "postgresql://")
 
 
 def normalize_name(value: str) -> str:
@@ -91,7 +96,7 @@ def main() -> None:
         "names_normalized": 0,
     }
 
-    with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
+    with psycopg.connect(database_url(), row_factory=dict_row) as conn:
         for migration_file in MIGRATION_FILES:
             if migration_file.exists():
                 conn.execute(migration_file.read_text(encoding="utf-8"))

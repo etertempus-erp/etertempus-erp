@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.auth import require_roles
+from app.db.models import UserRole
 from app.db.repositories import SqlAlchemyResourceRepository
 from app.db.session import get_db
 from app.domain.resources.entities import ResourceType
@@ -20,7 +22,7 @@ from app.use_cases.create_resource import CreateResource
 router = APIRouter()
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_roles(UserRole.ADMIN))])
 def create_resource(payload: ResourceCreate, db: Session = Depends(get_db)):
     repository = SqlAlchemyResourceRepository(db)
     use_case = CreateResource(repository)
@@ -54,7 +56,7 @@ def list_resources(
     return repository.list(organization_id=organization_id, type=type)
 
 
-@router.put("/{resource_id}", response_model=ResourceRead)
+@router.put("/{resource_id}", response_model=ResourceRead, dependencies=[Depends(require_roles(UserRole.ADMIN))])
 def update_resource(
     resource_id: UUID,
     payload: ResourceUpdate,
@@ -93,7 +95,7 @@ def list_stock(
     return repository.stock(organization_id=organization_id)
 
 
-@router.post("/{resource_id}/stock-adjustments", status_code=status.HTTP_201_CREATED)
+@router.post("/{resource_id}/stock-adjustments", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_roles(UserRole.ADMIN))])
 def add_stock_adjustment(
     resource_id: UUID,
     payload: StockAdjustmentCreate,
@@ -115,7 +117,7 @@ def add_stock_adjustment(
     return {"id": movement_id}
 
 
-@router.post("/{resource_id}/stock", status_code=status.HTTP_201_CREATED)
+@router.post("/{resource_id}/stock", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_roles(UserRole.ADMIN))])
 def set_current_stock(
     resource_id: UUID,
     payload: StockSetCreate,

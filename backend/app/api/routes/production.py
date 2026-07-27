@@ -1,12 +1,16 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.auth import audit_user_id, require_roles
 from app.db.models import FormulaModel, ResourceModel
+from app.db.models import InventoryMovementModel, ProductionBatchModel, UserRole
 from app.db.repositories import SqlAlchemyFormulaRepository, SqlAlchemyProductionRepository
 from app.db.session import get_db
+from app.schemas.auth import AuthenticatedUser
 from app.domain.resources.entities import ResourceType
 from app.schemas.production import ProductionBatchCreate, ProductionBatchSummary
 from app.use_cases.create_production_batch import CreateProductionBatch
@@ -24,7 +28,11 @@ def list_batches(
 
 
 @router.post("/batches", status_code=status.HTTP_201_CREATED)
-def create_batch(payload: ProductionBatchCreate, db: Session = Depends(get_db)):
+def create_batch(
+    payload: ProductionBatchCreate,
+    db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
+):
     product = db.get(ResourceModel, payload.product_resource_id)
     if product is None or product.organization_id != payload.organization_id:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Selecciona un producto valido.")
@@ -55,6 +63,17 @@ def create_batch(payload: ProductionBatchCreate, db: Session = Depends(get_db)):
 
     try:
         batch_id = use_case.execute(payload)
+        db.execute(
+            update(ProductionBatchModel)
+            .where(ProductionBatchModel.id == batch_id)
+            .values(created_by_user_id=audit_user_id(user))
+        )
+        db.execute(
+            update(InventoryMovementModel)
+            .where(InventoryMovementModel.production_batch_id == batch_id)
+            .values(created_by_user_id=audit_user_id(user))
+        )
+        db.commit()
     except LookupError as exc:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

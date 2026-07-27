@@ -9,11 +9,13 @@ from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.auth import audit_user_id, require_roles
 from app.db.models import (
     ExpenseCategoryModel,
     ExpenseModel,
     ImportedExpenseModel,
     PaymentMethodModel,
+    UserRole,
 )
 from app.db.session import get_db
 from app.schemas.expenses import (
@@ -26,6 +28,7 @@ from app.schemas.expenses import (
     ExpenseSummary,
     ExpenseUpdate,
 )
+from app.schemas.auth import AuthenticatedUser
 
 router = APIRouter()
 MONEY = Decimal("0.01")
@@ -131,7 +134,11 @@ def expense_options(
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=ExpenseRead)
-def create_expense(payload: ExpenseCreate, db: Session = Depends(get_db)):
+def create_expense(
+    payload: ExpenseCreate,
+    db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
+):
     try:
         validate_category_and_payment(db, payload.organization_id, payload.category_id, payload.payment_method_id)
         expense = ExpenseModel(
@@ -146,6 +153,7 @@ def create_expense(payload: ExpenseCreate, db: Session = Depends(get_db)):
             notes=payload.notes,
             status="confirmed",
             origin="system",
+            created_by_user_id=audit_user_id(user),
         )
         db.add(expense)
         db.commit()
@@ -312,7 +320,12 @@ def get_expense(
 
 
 @router.put("/{expense_id}", response_model=ExpenseRead)
-def update_expense(expense_id: UUID, payload: ExpenseUpdate, db: Session = Depends(get_db)):
+def update_expense(
+    expense_id: UUID,
+    payload: ExpenseUpdate,
+    db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(require_roles(UserRole.ADMIN)),
+):
     expense = db.get(ExpenseModel, expense_id)
     if expense is None or expense.organization_id != payload.organization_id:
         raise HTTPException(status_code=404, detail="Gasto no encontrado.")
@@ -329,7 +342,12 @@ def update_expense(expense_id: UUID, payload: ExpenseUpdate, db: Session = Depen
 
 
 @router.post("/{expense_id}/cancel", response_model=ExpenseRead)
-def cancel_expense(expense_id: UUID, payload: ExpenseCancel, db: Session = Depends(get_db)):
+def cancel_expense(
+    expense_id: UUID,
+    payload: ExpenseCancel,
+    db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(require_roles(UserRole.ADMIN)),
+):
     expense = db.get(ExpenseModel, expense_id)
     if expense is None or expense.organization_id != payload.organization_id:
         raise HTTPException(status_code=404, detail="Gasto no encontrado o importado. Solo se anulan gastos del ERP.")
@@ -338,6 +356,7 @@ def cancel_expense(expense_id: UUID, payload: ExpenseCancel, db: Session = Depen
 
     expense.status = "cancelled"
     expense.cancelled_at = datetime.now(timezone.utc)
+    expense.cancelled_by_user_id = audit_user_id(user)
     expense.cancellation_reason = payload.reason.strip()
     expense.updated_at = datetime.now(timezone.utc)
     db.commit()

@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.api.auth import require_roles
+from app.db.models import UserRole
 from app.db.repositories import SqlAlchemyFormulaRepository
 from app.db.session import get_db
 from app.domain.formulas.services import calculate_formula_grams
@@ -22,7 +24,7 @@ def list_formulas(
     return repository.list(organization_id=organization_id)
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_roles(UserRole.ADMIN))])
 def create_formula(payload: FormulaCreate, db: Session = Depends(get_db)):
     repository = SqlAlchemyFormulaRepository(db)
     use_case = CreateFormula(repository)

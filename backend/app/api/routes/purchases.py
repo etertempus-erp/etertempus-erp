@@ -9,6 +9,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
+from app.api.auth import audit_user_id, require_roles
 from app.db.models import (
     InventoryMovementModel,
     PurchaseDetailModel,
@@ -17,9 +18,11 @@ from app.db.models import (
     ResourceCostModel,
     ResourceModel,
     SupplierModel,
+    UserRole,
 )
 from app.db.session import get_db
 from app.domain.production.entities import MovementType
+from app.schemas.auth import AuthenticatedUser
 from app.schemas.purchases import (
     PurchaseCancel,
     PurchaseCreate,
@@ -161,7 +164,11 @@ def purchase_options(
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=PurchaseRead)
-def create_purchase(payload: PurchaseCreate, db: Session = Depends(get_db)):
+def create_purchase(
+    payload: PurchaseCreate,
+    db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
+):
     try:
         resource_ids = sorted({line.resource_id for line in payload.lines}, key=str)
         resources = db.scalars(select(ResourceModel).where(ResourceModel.id.in_(resource_ids))).all()
@@ -193,6 +200,7 @@ def create_purchase(payload: PurchaseCreate, db: Session = Depends(get_db)):
             subtotal=total,
             total=total,
             notes=payload.notes,
+            created_by_user_id=audit_user_id(user),
         )
         db.add(purchase)
         db.flush()
@@ -266,6 +274,7 @@ def confirm_purchase(
     purchase_id: UUID,
     organization_id: UUID = Query(...),
     db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(require_roles(UserRole.ADMIN, UserRole.OPERATOR)),
 ):
     purchase = db.scalar(
         select(PurchaseModel)
@@ -308,6 +317,7 @@ def confirm_purchase(
                 unit_cost_snapshot=detail.unit_price,
                 reason=f"Compra {purchase.code}",
                 occurred_at=datetime.combine(purchase.purchase_date, datetime.min.time(), tzinfo=timezone.utc),
+                created_by_user_id=audit_user_id(user),
             )
             db.add(movement)
             db.add(
@@ -326,6 +336,7 @@ def confirm_purchase(
 
         purchase.status = PurchaseStatus.CONFIRMED
         purchase.confirmed_at = datetime.now(timezone.utc)
+        purchase.confirmed_by_user_id = audit_user_id(user)
         purchase.updated_at = datetime.now(timezone.utc)
         db.commit()
         purchase = db.scalar(
@@ -348,6 +359,7 @@ def cancel_purchase(
     payload: PurchaseCancel,
     organization_id: UUID = Query(...),
     db: Session = Depends(get_db),
+    user: AuthenticatedUser = Depends(require_roles(UserRole.ADMIN)),
 ):
     purchase = db.scalar(
         select(PurchaseModel)
@@ -400,6 +412,7 @@ def cancel_purchase(
                         unit_cost_snapshot=detail.unit_price,
                         reason=f"Anulacion de {purchase.code}: {reason}",
                         occurred_at=now,
+                        created_by_user_id=audit_user_id(user),
                     )
                 )
             db.query(ResourceCostModel).filter(
@@ -410,6 +423,7 @@ def cancel_purchase(
 
         purchase.status = PurchaseStatus.CANCELLED
         purchase.cancelled_at = now
+        purchase.cancelled_by_user_id = audit_user_id(user)
         purchase.cancellation_reason = reason
         purchase.updated_at = now
         db.commit()

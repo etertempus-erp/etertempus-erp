@@ -24,5 +24,16 @@ eter-erp/
 
 ## Estado
 
-Esta es una base inicial de producto. Todavia no instala dependencias ni ejecuta una aplicacion completa, pero deja el proyecto organizado para comenzar el desarrollo real del MVP.
+Eter ERP ya cuenta con modulos operativos para recursos, formulas, compras, ventas, gastos, produccion, stock, movimientos y centro de operaciones.
 
+La preparacion de beta privada agrega:
+
+- autenticacion con cookie HTTP-only;
+- roles `admin`, `operator` y `viewer`;
+- CORS configurable por entorno;
+- migraciones Alembic;
+- Dockerfiles para backend y frontend;
+- compose de produccion separado;
+- guia de beta segura.
+
+Ver [docs/08_beta_privada_segura.md](docs/08_beta_privada_segura.md).

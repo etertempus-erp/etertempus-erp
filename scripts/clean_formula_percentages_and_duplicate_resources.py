@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import os
 from decimal import Decimal, ROUND_HALF_UP
 
 import psycopg
 from psycopg.rows import dict_row
 
 
-DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/eter_erp"
+DEFAULT_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/eter_erp"
+
+
+def database_url() -> str:
+    return os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL).replace("postgresql+psycopg://", "postgresql://")
 
 MERGES = {
     "T? Verde": "Te Verde",
@@ -119,7 +124,7 @@ def main() -> None:
         "resources_renamed": 0,
         "formula_items_rounded": 0,
     }
-    with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
+    with psycopg.connect(database_url(), row_factory=dict_row) as conn:
         for bad_name, good_name in MERGES.items():
             if merge_resource(conn, bad_name, good_name):
                 summary["resources_merged"] += 1
