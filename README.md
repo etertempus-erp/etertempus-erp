@@ -1,16 +1,28 @@
-## Hi there 👋
+# Eter ERP
 
-<!--
-**etertempus-erp/etertempus-erp** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+ERP modular para la gestion operativa de Eter Tempus, con foco inicial en blends, tisanas, produccion artesanal, inventario trazable y ventas por canal.
 
-Here are some ideas to get you started:
+## Objetivo de la version 0.1
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+Permitir el ciclo operativo minimo:
+
+1. Registrar recursos: materias primas, packaging y productos.
+2. Crear formulas versionadas en porcentaje.
+3. Elaborar un lote usando una formula.
+4. Registrar movimientos de inventario.
+5. Dejar la mezcla disponible para envasado y venta en futuras iteraciones.
+
+## Estructura
+
+```text
+eter-erp/
+  docs/          Documentacion funcional y decisiones
+  database/      ERD y esquema PostgreSQL inicial
+  backend/       API FastAPI y casos de uso
+  frontend/      Interfaz Next.js inicial
+```
+
+## Estado
+
+Esta es una base inicial de producto. Todavia no instala dependencias ni ejecuta una aplicacion completa, pero deja el proyecto organizado para comenzar el desarrollo real del MVP.
+

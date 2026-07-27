@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:16
+    platform: linux/amd64
+    container_name: eter-erp-postgres
+    environment:
+      POSTGRES_DB: eter_erp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+
+volumes:
+  postgres_data:
