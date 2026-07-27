@@ -8,6 +8,7 @@ import { Save } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { apiGet, apiPost, ExpenseOptions, ExpenseRead, ORGANIZATION_ID } from "@/lib/api";
 import { friendlyErrorMessage } from "@/lib/messages";
+import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -25,6 +26,9 @@ export default function QuickExpensePage() {
     amount: "",
     payment_method_id: "",
   });
+  const hasUnsavedChanges = Boolean(form.description.trim()) || Boolean(form.amount);
+
+  useUnsavedChangesWarning(hasUnsavedChanges && !saving);
 
   useEffect(() => {
     apiGet<ExpenseOptions>(`/expenses/options?organization_id=${ORGANIZATION_ID}`)

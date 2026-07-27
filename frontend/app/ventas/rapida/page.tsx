@@ -7,6 +7,7 @@ import { Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { apiGet, apiPost, ORGANIZATION_ID, ProductForSale, SaleOptions, SaleRead } from "@/lib/api";
 import { friendlyErrorMessage } from "@/lib/messages";
+import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 
 type QuickSaleLine = {
   product_resource_id: string;
@@ -54,6 +55,15 @@ export default function QuickSalePage() {
     () => lines.reduce((sum, line) => sum + Math.max(numberValue(line.quantity) * numberValue(line.unit_price) - numberValue(line.discount), 0), 0),
     [lines],
   );
+  const hasUnsavedChanges =
+    lines.length > 0 ||
+    Boolean(notes.trim()) ||
+    Boolean(productId) ||
+    quantity !== "1" ||
+    Boolean(unitPrice) ||
+    discount !== "0";
+
+  useUnsavedChangesWarning(hasUnsavedChanges && !saving);
 
   async function loadData() {
     try {

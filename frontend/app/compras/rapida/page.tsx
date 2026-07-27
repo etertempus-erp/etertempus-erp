@@ -7,6 +7,7 @@ import { CheckCircle2, Plus, ReceiptText, Save, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { apiGet, apiPost, ORGANIZATION_ID, PurchaseOptions, PurchaseRead, Resource, UnitType } from "@/lib/api";
 import { friendlyErrorMessage } from "@/lib/messages";
+import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 
 type QuickPurchaseLine = {
   resource_id: string;
@@ -51,6 +52,17 @@ export default function QuickPurchasePage() {
   const selectedResource = purchasableResources.find((item) => item.id === resourceId);
   const supplierNameToSave = supplierName === "__new__" ? newSupplierName.trim() : supplierName.trim();
   const total = useMemo(() => lines.reduce((sum, line) => sum + numberValue(line.total_amount), 0), [lines]);
+  const hasUnsavedChanges =
+    lines.length > 0 ||
+    Boolean(supplierName.trim()) ||
+    Boolean(newSupplierName.trim()) ||
+    Boolean(receiptNumber.trim()) ||
+    Boolean(notes.trim()) ||
+    Boolean(resourceId) ||
+    quantity !== "1" ||
+    Boolean(totalAmount);
+
+  useUnsavedChangesWarning(hasUnsavedChanges && !saving);
 
   async function loadData() {
     try {

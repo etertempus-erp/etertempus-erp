@@ -7,6 +7,7 @@ import { ClipboardCheck } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { apiGet, apiPost, FormulaDetail, FormulaSummary, ORGANIZATION_ID, Resource, ResourceStock } from "@/lib/api";
 import { friendlyErrorMessage } from "@/lib/messages";
+import { useUnsavedChangesWarning } from "@/lib/useUnsavedChangesWarning";
 
 type PreviewLine = {
   resource_id: string;
@@ -53,6 +54,14 @@ export default function QuickProductionPage() {
   }, [preview, resources, stock]);
 
   const hasInsufficientStock = previewLines.some((line) => line.available < line.required);
+  const hasUnsavedChanges =
+    Boolean(productId) ||
+    Boolean(formulaId) ||
+    targetWeight !== "400" ||
+    Boolean(notes.trim()) ||
+    previewLines.length > 0;
+
+  useUnsavedChangesWarning(hasUnsavedChanges && !saving);
 
   async function loadData() {
     try {
